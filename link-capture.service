@@ -1,0 +1,14 @@
+[Unit]
+Description=Common Lisp Link Capture Service
+After=network.target
+
+[Service]
+Type=simple
+User=vanangamudi
+WorkingDirectory=/home/vanangamudi/code/link-capture
+ExecStart=/home/vanangamudi/code/link-capture/link-capture
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

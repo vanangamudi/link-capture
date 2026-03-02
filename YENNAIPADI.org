@@ -1,0 +1,111 @@
+* How to use
+#+begin_src shell
+  mkdir ~/code && cd ~/code
+  git clone https://github.com/vanangamudi/link-capture.git
+#+end_src
+
+Edit this systemd service description to suite your setup, make sure to change the =username=, refer [[*Systemd Service description][here]] to run this service
+#+begin_src  conf
+  [Unit]
+  Description=Common Lisp Link Capture Service
+  After=network.target
+
+  [Service]
+  Type=simple
+  User=<your-username>
+  WorkingDirectory=%h/code/link-capture
+  ExecStart=ros run -- --script %h/code/link-capture/link-capture
+  Restart=always
+  RestartSec=3
+
+  [Install]
+  WantedBy=multi-user.target
+#+end_src
+
+Make the =systemd= aware of this file
+#+begin_src shell
+  sudo ln -s ~/code/link-capture/link-capture.service /etc/systemd/system/link-capture.service
+  sudo systemctl daemon-reload
+  sudo systemctl enable link-capture
+  sudo systemctl start link-capture
+  sudo systemctl status link-capture
+#+end_src
+
+Load the browser-extension in your browser, in firefox you can load this by going to =about:debugging= and clicking the =Load Temporary Addon= button. Upload the =manifest.json= under =browser-extension/= directory or you can choose to stick with [[bookmark-let]].
+
+* Note
+Use curl for debugging
+#+begin_src shell
+  curl -X POST http://localhost:8080/capture \
+       -d "token=CHANGE_ME&url=test"
+#+end_src
+
+* DONE bookmark-let
+
+This is the ideal setup but it won't work since we are using =http= protocol. More ideally firefox extension would be great
+#+begin_src js
+  javascript:(function(){
+    fetch("http://localhost:8080/capture",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/x-www-form-urlencoded"
+      },
+      body:
+        "token=CHANGE_ME"+
+        "&url="+encodeURIComponent(location.href)+
+        "&title="+encodeURIComponent(document.title)+
+        "&body="+encodeURIComponent(window.getSelection())
+    })
+    .then(res => res.text().then(t => ({status:res.status, body:t})))
+    .then(r => alert("Status: "+r.status+"\n"+r.body))
+    .catch(e => alert("Error: "+e));
+  })();
+#+end_src
+
+Until then use this one, which performs full navigation and you lose the current page.
+<<bookmark-let>>
+#+begin_src js
+  javascript:(function(){
+    location.href =
+      "http://localhost:8080/capture" +
+      "?token=CHANGE_ME" +
+      "&url=" + encodeURIComponent(location.href) +
+      "&title=" + encodeURIComponent(document.title) +
+      "&body=" + encodeURIComponent(window.getSelection());
+  })();
+#+end_src
+
+* DONE Browser extension
+My firefox currently supports manifest v2. The extension is under =browser-extension/= directory
+
+* DONE Systemd Service description
+
+Use the following commands to run it as service
+#+begin_src shell
+  sudo systemctl daemon-reload
+  sudo systemctl enable link-capture
+  sudo systemctl restart link-capture
+  sudo systemctl status link-capture
+#+end_src
+
+#+begin_src  conf
+  [Unit]
+  Description=Common Lisp Link Capture Service
+  After=network.target
+
+  [Service]
+  Type=simple
+  User=<your-username>
+  WorkingDirectory=%h/code/link-capture
+  ExecStart=%h/code/link-capture/link-capture
+  Restart=always
+  RestartSec=3
+
+  [Install]
+  WantedBy=multi-user.target
+#+end_src
+
+* DONE Building a binary
+#+begin_src shell
+  ros run -- --non-interactive --load build.lisp
+#+end_src
